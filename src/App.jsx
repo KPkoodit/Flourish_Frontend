@@ -50,30 +50,38 @@ function Header({ monthDate, onPrev, onNext, onToday }) {
   const month = monthDate.toLocaleString(undefined, { month: 'long' })
   const year = monthDate.getFullYear()
   return (
-    <div className="flex items-center justify-between mb-4">
+    <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
       <div className="text-2xl font-semibold">Flourish</div>
-      <div className="flex items-center gap-2">
-        <button className="px-3 py-1 rounded border border-neutral-600 hover:border-neutral-400" onClick={onPrev}>&larr;</button>
-        <div className="min-w-40 text-center font-medium">{month} {year}</div>
-        <button className="px-3 py-1 rounded border border-neutral-600 hover:border-neutral-400" onClick={onNext}>&rarr;</button>
-        <button className="ml-2 px-3 py-1 rounded border border-neutral-600 hover:border-neutral-400" onClick={onToday}>Today</button>
+      <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start mt-2 sm:mt-0">
+        <button className="px-3 py-1 rounded border border-neutral-600 hover:border-emerald-600" onClick={onPrev}>&larr;</button>
+        <div className="min-w-0 sm:min-w-40 text-center font-medium truncate">{month} {year}</div>
+        <button className="px-3 py-1 rounded border border-neutral-600 hover:border-emerald-600" onClick={onNext}>&rarr;</button>
+        <button className="px-3 py-1 rounded border border-neutral-600 hover:border-emerald-600" onClick={onToday}>Today</button>
       </div>
-    </div>
+    </header>
   )
 }
 
-// Legend: shows color → plant mapping
-function Legend({ plants }) {
+// Legend: selectable chips; highlights the active plant
+function Legend({ plants, selectedPlantId, onSelect }) {
   if (!plants.length) return null
   return (
-    <div className="flex items-center flex-wrap gap-4 text-sm text-neutral-300 mb-3">
-      {plants.map((p) => (
-        <div key={p.id} className="flex items-center gap-2">
-          <span className="inline-block h-3 w-3 rounded-full" style={{ backgroundColor: p.color }}></span>
-          <span>{p.name}</span>
-        </div>
-      ))}
-    </div>
+    <nav className="flex items-center flex-wrap gap-1.5 sm:gap-2 text-sm text-neutral-300 mb-3" aria-label="Plants">
+      <ul className="flex items-center flex-wrap gap-1.5 sm:gap-2 m-0 p-0 list-none">
+        {plants.map((p) => (
+          <li key={p.id}>
+            <button
+              onClick={() => onSelect(p.id)}
+              className={`px-2 py-1 sm:px-3 rounded border whitespace-nowrap ${selectedPlantId === p.id ? 'border-white' : 'border-neutral-600 hover:border-emerald-600'}`}
+              title={p.name}
+            >
+              <span className="inline-block h-2.5 w-2.5 rounded-full mr-2 align-middle" style={{ backgroundColor: p.color }}></span>
+              {p.name}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </nav>
   )
 }
 
@@ -91,10 +99,10 @@ function Calendar({ monthDate, plants, selectedPlantId, onToggleDay }) {
   }
 
   return (
-    <div className="rounded-lg border border-neutral-700 overflow-hidden">
+    <section className="rounded-lg border border-neutral-700 overflow-hidden" aria-label="Calendar">
       <div className="grid grid-cols-7 bg-neutral-900">
         {weekdayLabels.map((w) => (
-          <div key={w} className="px-3 py-2 text-center text-neutral-300 text-sm border-r border-neutral-800 last:border-r-0">{w}</div>
+          <div key={w} className="px-2 sm:px-3 py-2 text-center text-xs sm:text-sm text-neutral-300 border-r border-neutral-800 last:border-r-0">{w}</div>
         ))}
       </div>
       <div>
@@ -103,7 +111,7 @@ function Calendar({ monthDate, plants, selectedPlantId, onToggleDay }) {
             {week.map((date, di) => {
               // Empty cells before/after the month days
               if (!date) {
-                return <div key={di} className="h-24 bg-neutral-950 border-r border-neutral-800 last:border-r-0" />
+                return <div key={di} className="h-20 sm:h-24 bg-neutral-950 border-r border-neutral-800 last:border-r-0" />
               }
               const key = formatYYYYMMDD(date)
               const isToday = key === todayKey
@@ -116,40 +124,64 @@ function Calendar({ monthDate, plants, selectedPlantId, onToggleDay }) {
                   key={di}
                   onClick={() => onToggleDay(key)}
                   className={
-                    `h-24 w-full text-left p-2 border-r last:border-r-0 border-neutral-800 focus:outline-none ${dayStyle(hasSelected)}`
+                    `calendar-day relative h-20 sm:h-24 w-full text-left px-2 py-2 sm:px-3 sm:py-2.5 border-r last:border-r-0 border-neutral-800 focus:outline-none ${dayStyle(hasSelected)}`
                   }
                   // Subtle highlight using selected plant color when that plant has this day marked
                   style={hasSelected ? { backgroundColor: `${selected.color}20` } : undefined}
                 >
-                  <div className="flex items-start justify-between">
-                    <span className={'text-sm ' + (hasSelected ? 'text-white' : 'text-neutral-300')}>
-                      {date.getDate()}
-                    </span>
-                    {isToday && <span className="text-[10px] px-1 py-0.5 rounded bg-neutral-700 text-neutral-200">Today</span>}
-                  </div>
-                  {plantsOnDay.length > 0 && (
-                    <div className="mt-2 flex items-center gap-1 flex-wrap">
-                      {/* Up to 5 color dots to indicate plants with entries on this day */}
-                      {plantsOnDay.slice(0, 5).map((p) => (
-                        <span key={p.id} className="inline-block h-2.5 w-2.5 rounded-full" title={p.name} style={{ backgroundColor: p.color }}></span>
-                      ))}
-                      {plantsOnDay.length > 5 && (
-                        <span className="text-[10px] text-neutral-400">+{plantsOnDay.length - 5}</span>
+                  <div className="flex flex-col h-full">
+                    <div className="relative h-auto sm:h-6 pr-0 sm:pr-10">
+                      <div className="leading-none relative inline-block align-top">
+                        <span
+                          className={
+                            (isToday
+                              ? 'inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-emerald-600 text-white leading-none '
+                              : '') +
+                            ('text-xs sm:text-sm ' + (isToday ? '' : hasSelected ? 'text-white' : 'text-neutral-300'))
+                          }
+                        >
+                          {date.getDate()}
+                        </span>
+                      </div>
+                    </div>
+                    {/* Dot row: reserve height to avoid layout shift; always show at least one dot when there are markings */}
+                    <div className="mt-1 sm:mt-3 min-h-[16px] sm:min-h-[20px] w-full">
+                      {plantsOnDay.length > 0 && (
+                        <>
+                          {/* Base: up to 4 dots, then +N */}
+                          <div className="flex sm:hidden flex-wrap items-center gap-1 max-w-full overflow-hidden">
+                            {plantsOnDay.slice(0, Math.max(1, Math.min(4, plantsOnDay.length))).map((p) => (
+                              <span key={p.id} className="inline-block h-2 w-2 rounded-full shrink-0" title={p.name} style={{ backgroundColor: p.color }}></span>
+                            ))}
+                            {plantsOnDay.length > 4 && (
+                              <span className="text-[10px] text-neutral-400">+{plantsOnDay.length - 4}</span>
+                            )}
+                          </div>
+                          {/* ≥ sm: up to 6 dots, then +N */}
+                          <div className="hidden sm:flex flex-wrap items-center gap-1 max-w-full overflow-hidden">
+                            {plantsOnDay.slice(0, Math.max(1, Math.min(6, plantsOnDay.length))).map((p) => (
+                              <span key={p.id} className="inline-block h-2.5 w-2.5 rounded-full shrink-0" title={p.name} style={{ backgroundColor: p.color }}></span>
+                            ))}
+                            {plantsOnDay.length > 6 && (
+                              <span className="text-[10px] text-neutral-400">+{plantsOnDay.length - 6}</span>
+                            )}
+                          </div>
+                        </>
                       )}
                     </div>
-                  )}
+                  </div>
                 </button>
               )
             })}
           </div>
         ))}
       </div>
-    </div>
+    </section>
   )
 }
 
-// Plants bar: manage plants (add/select/rename/recolor/delete)
-function PlantsBar({ plants, selectedPlantId, onSelect, onAdd, onDelete, onRename, onColorChange }) {
+// Plants bar: keep add/edit/delete; remove scrollable list
+function PlantsBar({ plants, selectedPlantId, onAdd, onDelete, onRename, onColorChange }) {
   const [name, setName] = useState('')
   const [color, setColor] = useState('#34d399') // emerald-400
 
@@ -163,56 +195,63 @@ function PlantsBar({ plants, selectedPlantId, onSelect, onAdd, onDelete, onRenam
   const selected = plants.find((p) => p.id === selectedPlantId)
 
   return (
-    <div className="mb-4 grid gap-3 md:grid-cols-2">
-      <div className="flex items-center gap-2 overflow-x-auto">
-        {plants.map((p) => (
-          <button
-            key={p.id}
-            onClick={() => onSelect(p.id)}
-            className={`px-3 py-1 rounded border text-sm whitespace-nowrap ${selectedPlantId === p.id ? 'border-white' : 'border-neutral-600 hover:border-neutral-400'}`}
-          >
-            <span className="inline-block h-2.5 w-2.5 rounded-full mr-2 align-middle" style={{ backgroundColor: p.color }}></span>
-            {p.name}
-          </button>
-        ))}
-      </div>
-      <form className="flex items-center gap-2" onSubmit={handleAdd}>
-        <input
-          className="flex-1 min-w-0 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-neutral-100 placeholder-neutral-400"
-          placeholder="Add plant name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <input
-          type="color"
-          className="h-8 w-10 p-0 bg-transparent border border-neutral-700 rounded"
-          value={color}
-          onChange={(e) => setColor(e.target.value)}
-          aria-label="Pick plant color"
-        />
-        <button className="px-3 py-1 rounded border border-neutral-600 hover:border-neutral-400 text-sm" type="submit">Add</button>
-      </form>
+    <section className="mb-6 space-y-4">
+      <fieldset className="border border-neutral-700 rounded p-2.5 sm:p-3">
+        <legend className="px-1 text-sm text-neutral-300">Add plant</legend>
+        <form className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap" onSubmit={handleAdd}>
+          <label className="w-40 sm:w-64">
+            <span className="sr-only">Plant name</span>
+            <input
+              className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-neutral-100 placeholder-neutral-400"
+              placeholder="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+          <label>
+            <span className="sr-only">Color</span>
+            <input
+              type="color"
+              className="h-8 w-10 p-0 bg-transparent border border-neutral-700 rounded"
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+              aria-label="Pick plant color"
+            />
+          </label>
+          <button className="w-24 inline-flex items-center justify-center px-3 py-1 rounded border border-neutral-600 hover:border-neutral-400 text-sm" type="submit">Add</button>
+        </form>
+      </fieldset>
+
       {selected && (
-        <div className="md:col-span-2 flex items-center gap-2">
-          <input
-            className="bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-neutral-100"
-            value={selected.name}
-            onChange={(e) => onRename(selected.id, e.target.value)}
-            aria-label="Rename plant"
-          />
-          <input
-            type="color"
-            className="h-8 w-10 p-0 bg-transparent border border-neutral-700 rounded"
-            value={selected.color}
-            onChange={(e) => onColorChange(selected.id, e.target.value)}
-            aria-label="Change plant color"
-          />
-          <button className="ml-auto px-3 py-1 rounded border border-red-600 hover:border-red-400 text-sm text-red-300" onClick={() => onDelete(selected.id)}>
-            Delete
-          </button>
-        </div>
+        <fieldset className="border border-neutral-700 rounded p-2.5 sm:p-3">
+          <legend className="px-1 text-sm text-neutral-300">Selected plant</legend>
+          <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
+            <label className="w-40 sm:w-64">
+              <span className="sr-only">Rename plant</span>
+              <input
+                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-neutral-100"
+                value={selected.name}
+                onChange={(e) => onRename(selected.id, e.target.value)}
+                aria-label="Rename plant"
+              />
+            </label>
+            <label>
+              <span className="sr-only">Change plant color</span>
+              <input
+                type="color"
+                className="h-8 w-10 p-0 bg-transparent border border-neutral-700 rounded"
+                value={selected.color}
+                onChange={(e) => onColorChange(selected.id, e.target.value)}
+                aria-label="Change plant color"
+              />
+            </label>
+            <button className="w-24 inline-flex items-center justify-center px-3 py-1 rounded border border-red-600 hover:border-red-400 text-sm text-red-300" onClick={() => onDelete(selected.id)}>
+              Delete
+            </button>
+          </div>
+        </fieldset>
       )}
-    </div>
+    </section>
   )
 }
 
@@ -309,26 +348,25 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 p-6">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 p-4 sm:p-6 overflow-x-hidden">
+      <main className="max-w-3xl xl:max-w-4xl mx-auto">
         <Header monthDate={current} onPrev={goPrev} onNext={goNext} onToday={goToday} />
         <PlantsBar
           plants={plantsWithSets}
           selectedPlantId={selectedPlantId}
-          onSelect={handleSelectPlant}
           onAdd={handleAddPlant}
           onDelete={handleDeletePlant}
           onRename={handleRenamePlant}
           onColorChange={handleColorChange}
         />
-        <Legend plants={plantsWithSets} />
+        <Legend plants={plantsWithSets} selectedPlantId={selectedPlantId} onSelect={handleSelectPlant} />
         <Calendar
           monthDate={current}
           plants={plantsWithSets}
           selectedPlantId={selectedPlantId}
           onToggleDay={handleToggleDay}
         />
-      </div>
+      </main>
     </div>
   )
 }
