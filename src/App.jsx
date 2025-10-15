@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
+import ColorPicker from './components/ColorPicker'
 
 // Date helpers: compute month boundaries and format dates as YYYY-MM-DD
 function startOfMonth(date) {
@@ -72,7 +73,7 @@ function Legend({ plants, selectedPlantId, onSelect }) {
           <li key={p.id}>
             <button
               onClick={() => onSelect(p.id)}
-              className={`px-2 py-1 sm:px-3 rounded border whitespace-nowrap ${selectedPlantId === p.id ? 'border-white' : 'border-neutral-600 hover:border-emerald-600'}`}
+              className={`px-2 py-1 sm:px-3 rounded border border-transparent whitespace-nowrap transition-colors duration-150 ${selectedPlantId === p.id && selectedPlantId !== null ? 'ring-1 ring-white' : 'ring-0'}`}
               title={p.name}
             >
               <span className="inline-block h-2.5 w-2.5 rounded-full mr-2 align-middle" style={{ backgroundColor: p.color }}></span>
@@ -180,7 +181,7 @@ function Calendar({ monthDate, plants, selectedPlantId, onToggleDay }) {
   )
 }
 
-// Plants bar: keep add/edit/delete; remove scrollable list
+// Plants bar: add/edit/delete
 function PlantsBar({ plants, selectedPlantId, onAdd, onDelete, onRename, onColorChange }) {
   const [name, setName] = useState('')
   const [color, setColor] = useState('#34d399') // emerald-400
@@ -210,13 +211,7 @@ function PlantsBar({ plants, selectedPlantId, onAdd, onDelete, onRename, onColor
           </label>
           <label>
             <span className="sr-only">Color</span>
-            <input
-              type="color"
-              className="h-8 w-10 p-0 bg-transparent border border-neutral-700 rounded"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              aria-label="Pick plant color"
-            />
+            <ColorPicker color={color} onChange={setColor} />
           </label>
           <button className="w-24 inline-flex items-center justify-center px-3 py-1 rounded border border-neutral-600 hover:border-neutral-400 text-sm" type="submit">Add</button>
         </form>
@@ -237,13 +232,7 @@ function PlantsBar({ plants, selectedPlantId, onAdd, onDelete, onRename, onColor
             </label>
             <label>
               <span className="sr-only">Change plant color</span>
-              <input
-                type="color"
-                className="h-8 w-10 p-0 bg-transparent border border-neutral-700 rounded"
-                value={selected.color}
-                onChange={(e) => onColorChange(selected.id, e.target.value)}
-                aria-label="Change plant color"
-              />
+              <ColorPicker color={selected.color} onChange={(color) => onColorChange(selected.id, color)} />
             </label>
             <button className="w-24 inline-flex items-center justify-center px-3 py-1 rounded border border-red-600 hover:border-red-400 text-sm text-red-300" onClick={() => onDelete(selected.id)}>
               Delete
@@ -331,7 +320,7 @@ function App() {
   }
 
   function handleSelectPlant(id) {
-    setSelectedPlantId(id)
+    setSelectedPlantId(prev => (prev === id ? null : id))
   }
 
   function handleDeletePlant(id) {

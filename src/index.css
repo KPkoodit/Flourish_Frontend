@@ -47,7 +47,3 @@ button:not(.calendar-day) {
 button:not(.calendar-day):hover {
   border-color: #10b981;
 }
-button:not(.calendar-day):focus,
-button:not(.calendar-day):focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
